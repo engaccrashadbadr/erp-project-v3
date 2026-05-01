@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ERP System - نظام تخطيط موارد المؤسسات</title>
+    
+    <!-- مكتبات خارجية -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --primary: #1a73e8;
+            --sidebar-bg: #0f172a;
+            --sidebar-hover: #1e293b;
+            --accent-green: #059669;
+            --accent-red: #dc2626;
+            --accent-purple: #7c3aed;
+            --accent-orange: #ea580c;
+            --card-shadow: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
+        }
+        body {
+            font-family: 'Cairo', sans-serif;
+            background-color: #f1f5f9;
+        }
+        .sidebar-item {
+            transition: all 0.2s ease;
+            border-radius: 10px;
+            margin: 2px 0;
+            font-weight: 500;
+            font-size: 13px;
+        }
+        .sidebar-item.active {
+            background: linear-gradient(135deg, #1a73e8, #1d4ed8);
+            color: #fff;
+            box-shadow: 0 4px 12px rgba(26, 115, 232, 0.35);
+        }
+        .sidebar-item:hover:not(.active) {
+            background-color: var(--sidebar-hover);
+        }
+        .modal {
+            transition: opacity 0.2s ease;
+        }
+        body.modal-active {
+            overflow: hidden !important;
+        }
+        .card {
+            background: #fff;
+            border-radius: 14px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #e2e8f0;
+        }
+        .badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .debit-row {
+            border-right: 4px solid #dc2626;
+        }
+        .credit-row {
+            border-right: 4px solid #059669;
+        }
+        .statement-debit {
+            color: #dc2626;
+            font-weight: 700;
+        }
+        .statement-credit {
+            color: #059669;
+            font-weight: 700;
+        }
+        input, select, textarea {
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            padding: 9px 12px;
+            font-size: 14px;
+            transition: border-color 0.2s;
+            font-family: 'Cairo', sans-serif;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #1a73e8;
+            box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+        }
+        label {
+            font-weight: 600;
+            font-size: 13px;
+            color: #374151;
+            margin-bottom: 4px;
+            display: block;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #1a73e8, #1d4ed8);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-primary:hover {
+            box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
+            transform: translateY(-1px);
+        }
+        .btn-success {
+            background: linear-gradient(135deg, #059669, #047857);
+            color: #fff;
+            padding: 10px 18px;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-success:hover {
+            box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+            transform: translateY(-1px);
+        }
+        .stat-card {
+            background: #fff;
+            border-radius: 14px;
+            padding: 18px 20px;
+            box-shadow: var(--card-shadow);
+            border: 1px solid #e2e8f0;
+            transition: all 0.2s;
+        }
+        .stat-card:hover {
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+            transform: translateY(-2px);
+        }
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        table th {
+            font-weight: 700;
+            font-size: 13px;
+            color: #4b5563;
+            background: #f9fafb;
+            position: sticky;
+            top: 0;
+        }
+        table td {
+            font-size: 13px;
+        }
+        .section-title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        @media print {
+            .sidebar, header, .no-print {
+                display: none !important;
+            }
+            body { background: #fff; }
+        }
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-height: 300px;
+        }
+        .tree-item {
+            cursor: pointer;
+            transition: all 0.15s;
+            border-radius: 6px;
+            padding: 6px 10px;
+        }
+        .tree-item:hover {
+            background: #f1f5f9;
+        }
+        .tree-children {
+            margin-right: 20px;
+            border-right: 2px dashed #e2e8f0;
+            padding-right: 10px;
+        }
+    </style>
+</head>
+<body class="bg-slate-100">
+    <div class="flex h-screen overflow-hidden">
+        
+        <!-- الشريط الجانبي -->
+        <aside class="sidebar w-64 bg-[#0f172a] text-white flex flex-col transition-all duration-300 flex-shrink-0">
+            <div class="p-5 text-center border-b border-slate-700/50">
+                <h1 class="text-xl font-extrabold tracking-wide text-white">ERP System</h1>
+                <p class="text-xs text-slate-400 mt-1">نظام تخطيط موارد المؤسسات</p>
+                <p class="text-[10px] text-slate-500 mt-0.5">الإصدار 3.5.0 © 2026</p>
+            </div>
+            <nav class="flex-1 mt-4 px-3 space-y-1 overflow-y-auto">
+                <button onclick="showSection('dashboard')" class="sidebar-item w-full flex items-center p-2.5 active" id="btn-dashboard">
+                    <i data-lucide="layout-dashboard" class="ml-3" size="18"></i> لوحة التحكم
+                </button>
+                <button onclick="showSection('customers')" class="sidebar-item w-full flex items-center p-2.5" id="btn-customers">
+                    <i data-lucide="users" class="ml-3" size="18"></i> العملاء
+                </button>
+                <button onclick="showSection('suppliers')" class="sidebar-item w-full flex items-center p-2.5" id="btn-suppliers">
+                    <i data-lucide="truck" class="ml-3" size="18"></i> الموردين
+                </button>
+                <button onclick="showSection('inventory')" class="sidebar-item w-full flex items-center p-2.5" id="btn-inventory">
+                    <i data-lucide="package" class="ml-3" size="18"></i> المخزون
+                </button>
+                <button onclick="showSection('invoices')" class="sidebar-item w-full flex items-center p-2.5" id="btn-invoices">
+                    <i data-lucide="file-text" class="ml-3" size="18"></i> الفواتير
+                </button>
+                <button onclick="showSection('payments')" class="sidebar-item w-full flex items-center p-2.5" id="btn-payments">
+                    <i data-lucide="credit-card" class="ml-3" size="18"></i> السداد والتحصيل
+                </button>
+                <button onclick="showSection('accounting')" class="sidebar-item w-full flex items-center p-2.5" id="btn-accounting">
+                    <i data-lucide="book-open" class="ml-3" size="18"></i> القيود اليومية
+                </button>
+                <button onclick="showSection('chartOfAccounts')" class="sidebar-item w-full flex items-center p-2.5" id="btn-chartOfAccounts">
+                    <i data-lucide="git-branch" class="ml-3" size="18"></i> شجرة الحسابات
+                </button>
+                <button onclick="showSection('costs')" class="sidebar-item w-full flex items-center p-2.5" id="btn-costs">
+                    <i data-lucide="pie-chart" class="ml-3" size="18"></i> التكاليف والتقارير
+                </button>
+                <button onclick="showSection('profit')" class="sidebar-item w-full flex items-center p-2.5" id="btn-profit">
+                    <i data-lucide="trending-up" class="ml-3" size="18"></i> أرباح المنتجات
+                </button>
+                <button onclick="showSection('financialStatements')" class="sidebar-item w-full flex items-center p-2.5" id="btn-financialStatements">
+                    <i data-lucide="file-bar-chart" class="ml-3" size="18"></i> القوائم المالية
+                </button>
+                <button onclick="showSection('monthlyClosing')" class="sidebar-item w-full flex items-center p-2.5" id="btn-monthlyClosing">
+                    <i data-lucide="calendar-check" class="ml-3" size="18"></i> الإقفال الشهري
+                </button>
+                <button onclick="showSection('backup')" class="sidebar-item w-full flex items-center p-2.5" id="btn-backup">
+                    <i data-lucide="database" class="ml-3" size="18"></i> النسخ والبيانات
+                </button>
+            </nav>
+            <div class="p-3 border-t border-slate-700/50 text-center text-[10px] text-slate-500">
+                ERP System v3.5 © 2026
+            </div>
+        </aside>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="flex-1 flex flex-col overflow-hidden">
+            <header class="bg-white shadow-sm z-10 p-3 px-5 flex justify-between items-center border-b border-gray-200 no-print">
+                <div class="flex items-center gap-3">
+                    <h2 id="section-title" class="text-lg font-bold text-gray-800">لوحة التحكم</h2>
+                </div>
+                <div class="flex items-center gap-3">
+                    <span id="current-date" class="text-sm text-gray-500"></span>
+                    <div class="h-9 w-9 rounded-full bg-gradient-to-br from-blue-500 to-blue-700 flex items-center justify-center text-white shadow">
+                        <i data-lucide="user" size="17"></i>
+                    </div>
+                </div>
+            </header>
+            
+            <div class="flex-1 overflow-y-auto p-5" id="main-content">
+                <!-- جميع الأقسام يتم إنشاؤها هنا عند الطلب -->
+                <section id="dashboard" class="space-y-5"></section>
+                <section id="customers" class="hidden"></section>
+                <section id="suppliers" class="hidden"></section>
+                <section id="inventory" class="hidden"></section>
+                <section id="invoices" class="hidden"></section>
+                <section id="payments" class="hidden"></section>
+                <section id="accounting" class="hidden"></section>
+                <section id="chartOfAccounts" class="hidden"></section>
+                <section id="costs" class="hidden"></section>
+                <section id="profit" class="hidden"></section>
+                <section id="financialStatements" class="hidden"></section>
+                <section id="monthlyClosing" class="hidden"></section>
+                <section id="backup" class="hidden"></section>
+            </div>
+        </main>
+    </div>
+
+    <!-- النافذة المنبثقة الرئيسية (إضافة/تعديل) -->
+    <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div id="modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" style="max-height:92vh;">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 sticky top-0 z-10 rounded-t-2xl">
+                <h3 id="modal-title" class="font-bold text-lg text-gray-800">إضافة جديد</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition"><i data-lucide="x" size="20"></i></button>
+            </div>
+            <div id="modal-body" class="p-5 overflow-y-auto" style="max-height:60vh;"></div>
+            <div class="p-4 border-t bg-gray-50 flex justify-end gap-2 sticky bottom-0 rounded-b-2xl">
+                <button onclick="closeModal()" class="px-5 py-2.5 text-gray-600 hover:bg-gray-200 rounded-lg transition font-semibold text-sm">إلغاء</button>
+                <button id="modal-save-btn" class="btn-primary text-sm">حفظ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة كشف الحساب -->
+    <div id="statement-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden" style="max-height:92vh;">
+            <div class="p-4 border-b flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0 z-10 rounded-t-2xl">
+                <h3 id="statement-title" class="font-bold text-lg text-gray-800">كشف حساب</h3>
+                <button onclick="closeStatement()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition"><i data-lucide="x" size="20"></i></button>
+            </div>
+            <div id="statement-body" class="p-5 overflow-y-auto" style="max-height:60vh;"></div>
+            <div class="p-4 border-t bg-gray-50 flex justify-end rounded-b-2xl">
+                <button onclick="printStatement()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-sm flex items-center gap-2 no-print">
+                    <i data-lucide="printer" size="16"></i> طباعة
+                </button>
+                <button onclick="closeStatement()" class="px-5 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition font-semibold text-sm mr-2">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- نافذة معاينة الفاتورة PDF -->
+    <div id="invoice-pdf-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden" style="max-height:92vh;">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 sticky top-0 z-10 rounded-t-2xl">
+                <h3 class="font-bold text-lg text-gray-800">معاينة الفاتورة</h3>
+                <button onclick="closeInvoicePDF()" class="text-gray-400 hover:text-gray-600 p-1 rounded-full hover:bg-gray-200 transition"><i data-lucide="x" size="20"></i></button>
+            </div>
+            <div id="invoice-pdf-body" class="p-5 overflow-y-auto bg-white" style="max-height:60vh;"></div>
+            <div class="p-4 border-t bg-gray-50 flex justify-end gap-2 rounded-b-2xl">
+                <button onclick="printInvoicePDF()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-semibold text-sm flex items-center gap-2"><i data-lucide="printer" size="16"></i> طباعة / حفظ PDF</button>
+                <button onclick="closeInvoicePDF()" class="px-5 py-2 bg-slate-700 text-white rounded-lg hover:bg-slate-800 transition font-semibold text-sm">إغلاق</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- السكربت الأساسي (قاعدة البيانات والدوال المشتركة) -->
+    <script>
+        // ───── تهيئة قاعدة البيانات ─────
+        let db = JSON.parse(localStorage.getItem('erp_db_v3')) || {
+            customers: [],
+            suppliers: [],
+            inventory: [],
+            invoices: [],
+            entries: [],
+            costs: [],
+            payments: [],
+            chartOfAccounts: [],
+            monthlyClosings: []
+        };
+        
+        // التأكد من وجود جميع المصفوفات
+        if (!db.payments) db.payments = [];
+        if (!db.invoices) db.invoices = [];
+        if (!db.entries) db.entries = [];
+        if (!db.costs) db.costs = [];
+        if (!db.chartOfAccounts) db.chartOfAccounts = [];
+        if (!db.monthlyClosings) db.monthlyClosings = [];
+
+        // حسابات افتراضية إذا كانت شجرة الحسابات فارغة
+        if (db.chartOfAccounts.length === 0) {
+            db.chartOfAccounts = [
+                { id: 1, code: '1', name: 'الأصول', type: 'asset', parentId: null },
+                { id: 2, code: '1.1', name: 'النقدية', type: 'asset', parentId: 1 },
+                { id: 3, code: '1.2', name: 'العملاء', type: 'asset', parentId: 1 },
+                { id: 4, code: '1.3', name: 'المخزون', type: 'asset', parentId: 1 },
+                { id: 5, code: '2', name: 'الخصوم', type: 'liability', parentId: null },
+                { id: 6, code: '2.1', name: 'الموردين', type: 'liability', parentId: 5 },
+                { id: 7, code: '2.2', name: 'قروض', type: 'liability', parentId: 5 },
+                { id: 8, code: '3', name: 'حقوق الملكية', type: 'equity', parentId: null },
+                { id: 9, code: '3.1', name: 'رأس المال', type: 'equity', parentId: 8 },
+                { id: 10, code: '4', name: 'الإيرادات', type: 'revenue', parentId: null },
+                { id: 11, code: '4.1', name: 'المبيعات', type: 'revenue', parentId: 10 },
+                { id: 12, code: '5', name: 'المصروفات', type: 'expense', parentId: null },
+                { id: 13, code: '5.1', name: 'تكاليف البضاعة المباعة', type: 'expense', parentId: 12 },
+                { id: 14, code: '5.2', name: 'مصروفات تشغيلية', type: 'expense', parentId: 12 }
+            ];
+        }
+
+        // دالة حفظ البيانات في localStorage
+        function saveData() {
+            localStorage.setItem('erp_db_v3', JSON.stringify(db));
+            if (typeof updateDashboard === 'function') updateDashboard();
+        }
+
+        // ───── التنقل بين الأقسام ─────
+        function showSection(id) {
+            // إخفاء جميع الأقسام
+            document.querySelectorAll('#main-content > section').forEach(s => s.classList.add('hidden'));
+            // إظهار القسم المستهدف
+            const target = document.getElementById(id);
+            if (target) target.classList.remove('hidden');
+            
+            // تحديث الشريط الجانبي
+            document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById('btn-' + id);
+            if (btn) btn.classList.add('active');
+            
+            // تحديث عنوان الصفحة
+            const titles = {
+                dashboard: 'لوحة التحكم',
+                customers: 'إدارة العملاء',
+                suppliers: 'إدارة الموردين',
+                inventory: 'إدارة المخزون',
+                invoices: 'إدارة الفواتير',
+                payments: 'السداد والتحصيل',
+                accounting: 'القيود اليومية',
+                chartOfAccounts: 'شجرة الحسابات',
+                costs: 'التكاليف والتقارير',
+                profit: 'أرباح المنتجات',
+                financialStatements: 'القوائم المالية',
+                monthlyClosing: 'الإقفال الشهري',
+                backup: 'النسخ الاحتياطي والبيانات'
+            };
+            document.getElementById('section-title').innerText = titles[id] || id;
+            
+            // استدعاء دالة العرض الخاصة بالموديول
+            const renderFunctions = {
+                dashboard: updateDashboard,
+                customers: renderCustomers,
+                suppliers: renderSuppliers,
+                inventory: renderInventory,
+                invoices: renderInvoices,
+                payments: renderPayments,
+                accounting: renderAccounting,
+                chartOfAccounts: renderChartOfAccounts,
+                costs: renderCosts,
+                profit: renderProfit,
+                financialStatements: renderFinancialStatements,
+                monthlyClosing: renderMonthlyClosing,
+                backup: renderBackup
+            };
+            
+            if (renderFunctions[id] && typeof renderFunctions[id] === 'function') {
+                renderFunctions[id]();
+            }
+            
+            lucide.createIcons();
+        }
+
+        // ───── دوال مشتركة للنوافذ المنبثقة ─────
+        function closeModal() {
+            document.getElementById('modal-overlay').classList.add('hidden');
+            document.getElementById('modal-body').innerHTML = '';
+        }
+
+        function closeStatement() {
+            document.getElementById('statement-overlay').classList.add('hidden');
+        }
+
+        function closeInvoicePDF() {
+            document.getElementById('invoice-pdf-overlay').classList.add('hidden');
+        }
+
+        // طباعة كشف الحساب (موجودة هنا لأنها تستخدم #statement-body)
+        function printStatement() {
+            const content = document.getElementById('statement-body').innerHTML;
+            if (!content) return;
+            const printWin = window.open('', '_blank', 'width=900,height=700');
+            printWin.document.write(`
+                <html dir="rtl">
+                <head><title>كشف حساب</title>
+                <style>body{font-family:Cairo,sans-serif;padding:20px;direction:rtl}table{width:100%;border-collapse:collapse}th,td{border:1px solid #ddd;padding:8px;text-align:right}.debit{color:#dc2626}.credit{color:#059669}</style>
+                </head>
+                <body>${content}</body></html>
+            `);
+            printWin.document.close();
+            setTimeout(() => printWin.print(), 500);
+        }
+
+        // ───── مستمعي الأحداث ─────
+        document.getElementById('modal-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeModal();
+        });
+        document.getElementById('statement-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeStatement();
+        });
+        document.getElementById('invoice-pdf-overlay').addEventListener('click', function(e) {
+            if (e.target === this) closeInvoicePDF();
+        });
+
+        // عرض التاريخ الحالي
+        document.getElementById('current-date').innerText = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'full' }).format(new Date());
+
+        // تحميل أولي
+        lucide.createIcons();
+        if (typeof updateDashboard === 'function') updateDashboard();
+
+        console.log('✅ ERP System v3.5 Core - تم التحميل');
+    </script>
+
+    <!-- تحميل الموديولات الخارجية -->
+    <script src="modules/dashboard.js"></script>
+    <script src="modules/customers.js"></script>
+    <script src="modules/suppliers.js"></script>
+    <script src="modules/inventory.js"></script>
+    <script src="modules/invoices.js"></script>
+    <script src="modules/payments.js"></script>
+    <script src="modules/accounting.js"></script>
+    <script src="modules/chartOfAccounts.js"></script>
+    <script src="modules/costs.js"></script>
+    <script src="modules/profit.js"></script>
+    <script src="modules/financialStatements.js"></script>
+    <script src="modules/monthlyClosing.js"></script>
+    <script src="modules/backup.js"></script>
+</body>
+</html>
