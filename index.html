@@ -93,10 +93,17 @@
     </div>
 
     <script>
-        // ========== قاعدة البيانات العامة ==========
+        // ───── تهيئة قاعدة البيانات ─────
         let db = JSON.parse(localStorage.getItem('erp_db_v3')) || {
-            customers: [], suppliers: [], inventory: [], invoices: [], entries: [], costs: [], payments: [],
-            chartOfAccounts: [], monthlyClosings: []
+            customers: [],
+            suppliers: [],
+            inventory: [],
+            invoices: [],
+            entries: [],
+            costs: [],
+            payments: [],
+            chartOfAccounts: [],
+            monthlyClosings: []
         };
         // التأكد من وجود المصفوفات
         ['payments','invoices','entries','costs','chartOfAccounts','monthlyClosings'].forEach(k => { if (!db[k]) db[k] = []; });
