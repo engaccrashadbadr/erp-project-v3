@@ -27,3 +27,17 @@ window.renderDashboard = function() {
     `;
     lucide.createIcons();
 };
+// js/modules/dashboard.js
+window.renderDashboard = function() {
+    const data = ERP.db; // الوصول الصحيح للبيانات
+    const totalSales = data.invoices.filter(inv => inv.type === 'sale').reduce((s,inv) => s + (inv.total||0), 0);
+    // ... باقي كود العرض ...
+    
+    document.getElementById('dashboard').innerHTML = `
+        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+            <!-- كود الكروت الخاصة بك هنا -->
+            <div class="stat-card">إجمالي المبيعات: ${totalSales.toFixed(2)}</div>
+        </div>
+    `;
+    lucide.createIcons();
+};
