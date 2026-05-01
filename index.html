@@ -325,16 +325,10 @@
     <!-- السكربت الأساسي (قاعدة البيانات والدوال المشتركة) -->
     <script>
         // ───── تهيئة قاعدة البيانات ─────
-        let db = JSON.parse(localStorage.getItem('erp_db_v3')) || {
-            customers: [],
-            suppliers: [],
-            inventory: [],
-            invoices: [],
-            entries: [],
-            costs: [],
-            payments: [],
-            chartOfAccounts: [],
-            monthlyClosings: []
+      function saveData() {
+    localStorage.setItem('erp_db_v3', JSON.stringify(db));
+    if (typeof renderDashboard === 'function') renderDashboard();  // تغيير updateDashboard إلى renderDashboard
+}
         };
         
         // التأكد من وجود جميع المصفوفات
@@ -493,3 +487,12 @@
     <script src="modules/backup.js"></script>
 </body>
 </html>
+<script>
+    // بعد تحميل جميع الموديولات، نعرض لوحة التحكم بشكل افتراضي
+    if (typeof renderDashboard === 'function') {
+        renderDashboard();
+    }
+    // التأكد من تفعيل أيقونة lucide مرة أخيرة
+    lucide.createIcons();
+</script>
+
