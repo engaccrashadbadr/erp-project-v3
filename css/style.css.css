@@ -1,0 +1,197 @@
+:root {
+    --primary: #1a73e8;
+    --sidebar-bg: #0f172a;
+    --sidebar-hover: #1e293b;
+    --accent-green: #059669;
+    --accent-red: #dc2626;
+    --accent-purple: #7c3aed;
+    --accent-orange: #ea580c;
+    --card-shadow: 0 1px 3px rgba(0, 0, 0, .06), 0 1px 2px rgba(0, 0, 0, .04);
+}
+body {
+    font-family: 'Cairo', sans-serif;
+    background-color: #f1f5f9;
+}
+.sidebar-item {
+    transition: all 0.2s ease;
+    border-radius: 10px;
+    margin: 2px 0;
+    font-weight: 500;
+    font-size: 13px;
+}
+.sidebar-item.active {
+    background: linear-gradient(135deg, #1a73e8, #1d4ed8);
+    color: #fff;
+    box-shadow: 0 4px 12px rgba(26, 115, 232, 0.35);
+}
+.sidebar-item:hover:not(.active) {
+    background-color: var(--sidebar-hover);
+}
+.modal {
+    transition: opacity 0.2s ease;
+}
+body.modal-active {
+    overflow: hidden !important;
+}
+.invoice-item-row {
+    transition: all 0.15s ease;
+}
+.invoice-item-row:hover {
+    background-color: #f8fafc;
+}
+.card {
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid #e2e8f0;
+}
+.badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+}
+.badge-raw {
+    background: #fef3c7;
+    color: #92400e;
+}
+.badge-semi {
+    background: #dbeafe;
+    color: #1e40af;
+}
+.badge-finished {
+    background: #d1fae5;
+    color: #065f46;
+}
+.debit-row {
+    border-right: 4px solid #dc2626;
+}
+.credit-row {
+    border-right: 4px solid #059669;
+}
+.statement-debit {
+    color: #dc2626;
+    font-weight: 700;
+}
+.statement-credit {
+    color: #059669;
+    font-weight: 700;
+}
+input,
+select,
+textarea {
+    border: 1px solid #d1d5db;
+    border-radius: 8px;
+    padding: 9px 12px;
+    font-size: 14px;
+    transition: border-color 0.2s;
+    font-family: 'Cairo', sans-serif;
+}
+input:focus,
+select:focus,
+textarea:focus {
+    outline: none;
+    border-color: #1a73e8;
+    box-shadow: 0 0 0 3px rgba(26, 115, 232, 0.1);
+}
+label {
+    font-weight: 600;
+    font-size: 13px;
+    color: #374151;
+    margin-bottom: 4px;
+    display: block;
+}
+.btn-primary {
+    background: linear-gradient(135deg, #1a73e8, #1d4ed8);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+.btn-primary:hover {
+    box-shadow: 0 6px 20px rgba(26, 115, 232, 0.4);
+    transform: translateY(-1px);
+}
+.btn-success {
+    background: linear-gradient(135deg, #059669, #047857);
+    color: #fff;
+    padding: 10px 18px;
+    border-radius: 10px;
+    font-weight: 600;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+.btn-success:hover {
+    box-shadow: 0 6px 20px rgba(5, 150, 105, 0.4);
+    transform: translateY(-1px);
+}
+.stat-card {
+    background: #fff;
+    border-radius: 14px;
+    padding: 18px 20px;
+    box-shadow: var(--card-shadow);
+    border: 1px solid #e2e8f0;
+    transition: all 0.2s;
+}
+.stat-card:hover {
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+    transform: translateY(-2px);
+}
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+}
+table th {
+    font-weight: 700;
+    font-size: 13px;
+    color: #4b5563;
+    background: #f9fafb;
+    position: sticky;
+    top: 0;
+}
+table td {
+    font-size: 13px;
+}
+.section-title-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+@media print {
+    .sidebar,
+    header,
+    .no-print {
+        display: none !important;
+    }
+    body {
+        background: #fff;
+    }
+}
+.chart-container {
+    position: relative;
+    width: 100%;
+    max-height: 300px;
+}
+.tree-item {
+    cursor: pointer;
+    transition: all 0.15s;
+    border-radius: 6px;
+    padding: 6px 10px;
+}
+.tree-item:hover {
+    background: #f1f5f9;
+}
+.tree-children {
+    margin-right: 20px;
+    border-right: 2px dashed #e2e8f0;
+    padding-right: 10px;
+}
