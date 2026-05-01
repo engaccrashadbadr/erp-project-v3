@@ -225,3 +225,38 @@ function whenReady(fn) {
         fn();
     }
 }
+// js/app.js الجزء المعدل في ملف
+const ERP = {
+    db: JSON.parse(localStorage.getItem('erp_db_v3')) || {
+        customers: [], suppliers: [], inventory: [], invoices: [], 
+        entries: [], costs: [], payments: [], chartOfAccounts: [], monthlyClosings: []
+    },
+
+    loadModule(moduleName) {
+        // تحديث الواجهة وتغيير العناوين
+        const titles = { dashboard: 'لوحة التحكم', customers: 'العملاء', /* ... باقي العناوين */ };
+        document.getElementById('section-title').innerText = titles[moduleName] || moduleName;
+        
+        // إخفاء كل الأقسام وإظهار القسم المطلوب
+        document.querySelectorAll('#main-content > section').forEach(s => s.classList.add('hidden'));
+        const target = document.getElementById(moduleName);
+        if (target) target.classList.remove('hidden');
+
+        // تحميل الملف برمجياً
+        const script = document.createElement('script');
+        script.src = `js/modules/${moduleName}.js?v=${Date.now()}`; // إضافة التوقيت لمنع الكاش
+        script.onload = () => {
+            // استدعاء دالة الرندر الموجودة داخل الموديول
+            const renderFunctionName = 'render' + moduleName.charAt(0).toUpperCase() + moduleName.slice(1);
+            if (typeof window[renderFunctionName] === 'function') {
+                window[renderFunctionName]();
+            }
+            lucide.createIcons();
+        };
+        document.body.appendChild(script);
+    },
+
+    saveData() {
+        localStorage.setItem('erp_db_v3', JSON.stringify(this.db));
+    }
+};
