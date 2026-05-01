@@ -121,12 +121,16 @@
             ];
         }
 
+        // دوال عامة
         function saveData() {
             localStorage.setItem('erp_db_v3', JSON.stringify(db));
             if (typeof renderDashboard === 'function') renderDashboard();
         }
 
-        function closeModal() { document.getElementById('modal-overlay').classList.add('hidden'); document.getElementById('modal-body').innerHTML = ''; }
+        function closeModal() { 
+            document.getElementById('modal-overlay').classList.add('hidden'); 
+            document.getElementById('modal-body').innerHTML = ''; 
+        }
         function closeStatement() { document.getElementById('statement-overlay').classList.add('hidden'); }
         function closeInvoicePDF() { document.getElementById('invoice-pdf-overlay').classList.add('hidden'); }
         
