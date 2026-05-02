@@ -15,11 +15,12 @@
     <style>
         body { font-family: 'Cairo', sans-serif; }
         .login-container { min-height: 100vh; display: flex; align-items: center; justify-content: center; background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%); }
-        .app-hidden { display: none; }
+        .app-hidden { display: none !important; }
     </style>
 </head>
 <body class="bg-slate-100">
-    <!-- شاشة تسجيل الدخول -->
+
+    <!-- ========== شاشة تسجيل الدخول ========== -->
     <div id="login-screen" class="login-container">
         <div class="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-md">
             <h1 class="text-2xl font-bold text-center mb-2">ERP System</h1>
@@ -39,9 +40,9 @@
         </div>
     </div>
 
-    <!-- التطبيق الرئيسي (مخفي حتى تسجيل الدخول) -->
-    <div id="app-main" class="app-hidden flex h-screen overflow-hidden">
-        <!-- الشريط الجانبي (سيتم بناؤه ديناميكياً حسب الصلاحيات) -->
+    <!-- ========== التطبيق الرئيسي (مخفي حتى تسجيل الدخول) ========== -->
+    <div id="app-main" class="flex h-screen overflow-hidden app-hidden">
+        <!-- الشريط الجانبي -->
         <aside class="sidebar w-64 bg-[#0f172a] text-white flex flex-col flex-shrink-0">
             <div class="p-5 text-center border-b border-slate-700/50">
                 <h1 class="text-xl font-extrabold tracking-wide">ERP System</h1>
@@ -49,7 +50,7 @@
                 <p class="text-[10px] text-slate-500 mt-0.5">الإصدار 3.5.0 © 2026</p>
             </div>
             <nav id="sidebar-nav" class="flex-1 mt-4 px-3 space-y-1 overflow-y-auto">
-                <!-- الأزرار ستُبنى هنا حسب الصلاحيات -->
+                <!-- سيتم بناؤه ديناميكياً حسب الصلاحيات -->
             </nav>
             <div class="p-3 border-t border-slate-700/50 flex justify-between items-center">
                 <span id="sidebar-username" class="text-sm"></span>
@@ -67,206 +68,341 @@
                 </div>
             </header>
             <div class="flex-1 overflow-y-auto p-5" id="main-content">
-                <!-- الأقسام ستُضاف هنا ديناميكياً -->
-                <section id="dynamic-section" class="space-y-5"></section>
+                <section id="dashboard" class="space-y-5"></section>
+                <section id="customers" class="hidden"></section>
+                <section id="suppliers" class="hidden"></section>
+                <section id="inventory" class="hidden"></section>
+                <section id="invoices" class="hidden"></section>
+                <section id="payments" class="hidden"></section>
+                <section id="accounting" class="hidden"></section>
+                <section id="chartOfAccounts" class="hidden"></section>
+                <section id="costs" class="hidden"></section>
+                <section id="profit" class="hidden"></section>
+                <section id="financialStatements" class="hidden"></section>
+                <section id="monthlyClosing" class="hidden"></section>
+                <section id="backup" class="hidden"></section>
             </div>
         </main>
     </div>
 
-    <!-- نوافذ منبثقة (نفس السابق) -->
+    <!-- النوافذ المنبثقة (كما في نسختك الأصلية) -->
     <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <!-- محتوى النافذة يضاف ديناميكياً -->
+        <div id="modal-content" class="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden" style="max-height:92vh;">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 sticky top-0"><h3 id="modal-title" class="font-bold text-lg">إضافة جديد</h3><button onclick="closeModal()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" size="20"></i></button></div>
+            <div id="modal-body" class="p-5 overflow-y-auto" style="max-height:60vh;"></div>
+            <div class="p-4 border-t bg-gray-50 flex justify-end gap-2"><button onclick="closeModal()" class="px-5 py-2.5 text-gray-600 hover:bg-gray-200 rounded-lg font-semibold">إلغاء</button><button id="modal-save-btn" class="btn-primary text-sm">حفظ</button></div>
+        </div>
     </div>
+
     <div id="statement-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <!-- مشابه -->
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl overflow-hidden" style="max-height:92vh;">
+            <div class="p-4 border-b flex justify-between items-center bg-gradient-to-r from-blue-50 to-indigo-50 sticky top-0"><h3 id="statement-title" class="font-bold text-lg">كشف حساب</h3><button onclick="closeStatement()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" size="20"></i></button></div>
+            <div id="statement-body" class="p-5 overflow-y-auto" style="max-height:60vh;"></div>
+            <div class="p-4 border-t bg-gray-50 flex justify-end gap-2"><button onclick="printStatement()" class="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2 no-print"><i data-lucide="printer" size="16"></i> طباعة</button><button onclick="closeStatement()" class="px-5 py-2 bg-slate-700 text-white rounded-lg">إغلاق</button></div>
+        </div>
     </div>
+
     <div id="invoice-pdf-overlay" class="fixed inset-0 bg-black bg-opacity-50 hidden z-50 flex items-center justify-center p-4">
-        <!-- مشابه -->
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-3xl overflow-hidden" style="max-height:92vh;">
+            <div class="p-4 border-b flex justify-between items-center bg-gray-50 sticky top-0"><h3 class="font-bold text-lg">معاينة الفاتورة</h3><button onclick="closeInvoicePDF()" class="text-gray-400 hover:text-gray-600"><i data-lucide="x" size="20"></i></button></div>
+            <div id="invoice-pdf-body" class="p-5 overflow-y-auto bg-white" style="max-height:60vh;"></div>
+            <div class="p-4 border-t bg-gray-50 flex justify-end gap-2"><button onclick="printInvoicePDF()" class="px-4 py-2 bg-blue-600 text-white rounded-lg flex items-center gap-2"><i data-lucide="printer" size="16"></i> طباعة / حفظ PDF</button><button onclick="closeInvoicePDF()" class="px-5 py-2 bg-slate-700 text-white rounded-lg">إغلاق</button></div>
+        </div>
     </div>
 
     <script>
-        // ---------- تهيئة التطبيق ----------
-        const API_BASE = 'api/';
-        let currentUser = null;
-        let userPermissions = [];
+        // ====================== 1. نظام المستخدمين والصلاحيات (محلي) ======================
+        const USERS_STORE_KEY = 'erp_users_db';
+        const AUTH_KEY = 'erp_current_session';
 
-        // عناصر DOM
+        // تشفير كلمة المرور باستخدام SHA-256 (آمن كفاية للتجربة)
+        async function hashPassword(password) {
+            const msgUint8 = new TextEncoder().encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+
+        // إعداد قاعدة بيانات المستخدمين الافتراضية إذا كانت فارغة
+        async function initUsersDB() {
+            if (!localStorage.getItem(USERS_STORE_KEY)) {
+                const defaultUsers = [
+                    { id: 1, username: "admin", password: await hashPassword("123"), role: "admin" },
+                    { id: 2, username: "sales_user", password: await hashPassword("456"), role: "sales" }
+                ];
+                localStorage.setItem(USERS_STORE_KEY, JSON.stringify(defaultUsers));
+            }
+        }
+
+        // الحصول على بيانات المستخدمين
+        function getUsersDB() {
+            return JSON.parse(localStorage.getItem(USERS_STORE_KEY)) || [];
+        }
+
+        // تسجيل الدخول
+        async function login(username, password) {
+            const users = getUsersDB();
+            const hashedInput = await hashPassword(password);
+            const user = users.find(u => u.username === username && u.password === hashedInput);
+            if (!user) throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
+            // حفظ الجلسة
+            const session = {
+                userId: user.id,
+                username: user.username,
+                role: user.role
+            };
+            localStorage.setItem(AUTH_KEY, JSON.stringify(session));
+            return session;
+        }
+
+        // تسجيل الخروج
+        function logout() {
+            localStorage.removeItem(AUTH_KEY);
+            document.getElementById('app-main').classList.add('app-hidden');
+            document.getElementById('login-screen').classList.remove('app-hidden');
+            // إعادة ضبط الحقول
+            document.getElementById('login-username').value = '';
+            document.getElementById('login-password').value = '';
+        }
+
+        // التحقق من الجلسة الحالية
+        function getCurrentSession() {
+            const session = localStorage.getItem(AUTH_KEY);
+            return session ? JSON.parse(session) : null;
+        }
+
+        // تعريف الأدوار والصلاحيات (نفس هيكلك القديم)
+        const ROLES_PERMISSIONS = {
+            admin: ["dashboard", "customers", "suppliers", "inventory", "invoices", "payments", "accounting", "chartOfAccounts", "costs", "profit", "financialStatements", "monthlyClosing", "backup"],
+            sales: ["dashboard", "customers", "invoices"]
+        };
+
+        // الحصول على صلاحيات المستخدم الحالي
+        function getUserPermissions() {
+            const session = getCurrentSession();
+            if (!session) return [];
+            return ROLES_PERMISSIONS[session.role] || [];
+        }
+
+        // ====================== 2. إعداد شاشة الدخول والانتقال للتطبيق ======================
         const loginScreen = document.getElementById('login-screen');
         const appMain = document.getElementById('app-main');
         const loginForm = document.getElementById('login-form');
         const loginError = document.getElementById('login-error');
-        const logoutBtn = document.getElementById('logout-btn');
-        const sidebarNav = document.getElementById('sidebar-nav');
-        const sectionTitle = document.getElementById('section-title');
-        const dynamicSection = document.getElementById('dynamic-section');
         const sidebarUsername = document.getElementById('sidebar-username');
+        const logoutBtn = document.getElementById('logout-btn');
 
-        // قائمة جميع الأقسام الممكنة مع أسمائها وملفاتها
-        const sectionsConfig = {
-            dashboard: { title: 'لوحة التحكم', file: 'js/modules/dashboard.js' },
-            customers: { title: 'العملاء', file: 'js/modules/customers.js' },
-            suppliers: { title: 'الموردين', file: 'js/modules/suppliers.js' },
-            inventory: { title: 'المخزون', file: 'js/modules/inventory.js' },
-            invoices: { title: 'الفواتير', file: 'js/modules/invoices.js' },
-            payments: { title: 'السداد والتحصيل', file: 'js/modules/payments.js' },
-            accounting: { title: 'القيود اليومية', file: 'js/modules/accounting.js' },
-            chartOfAccounts: { title: 'شجرة الحسابات', file: 'js/modules/chartOfAccounts.js' },
-            costs: { title: 'التكاليف والتقارير', file: 'js/modules/costs.js' },
-            profit: { title: 'أرباح المنتجات', file: 'js/modules/profit.js' },
-            financialStatements: { title: 'القوائم المالية', file: 'js/modules/financialStatements.js' },
-            monthlyClosing: { title: 'الإقفال الشهري', file: 'js/modules/monthlyClosing.js' },
-            backup: { title: 'النسخ والبيانات', file: 'js/modules/backup.js' }
-        };
-
-        // تحميل موديول عند الطلب (مع التخزين المؤقت)
-        const loadedModules = {};
-        async function loadModule(sectionId) {
-            if (loadedModules[sectionId]) return loadedModules[sectionId];
-            const config = sectionsConfig[sectionId];
-            if (!config) throw new Error('قسم غير معروف');
-            // تحميل السكربت ديناميكياً
-            return new Promise((resolve, reject) => {
-                const script = document.createElement('script');
-                script.src = config.file;
-                script.onload = () => {
-                    loadedModules[sectionId] = true;
-                    resolve();
-                };
-                script.onerror = () => reject(new Error(`فشل تحميل ${config.file}`));
-                document.head.appendChild(script);
-            });
-        }
-
-        // عرض قسم معين
-        async function showSection(sectionId) {
-            if (!sectionId || !userPermissions.includes(sectionId)) {
-                alert('غير مصرح لك بدخول هذا القسم');
-                return;
-            }
-            // تحميل الموديول إذا لم يُحمّل
-            try {
-                await loadModule(sectionId);
-            } catch (e) {
-                alert(e.message);
-                return;
-            }
-            // تحديث العنوان
-            sectionTitle.textContent = sectionsConfig[sectionId]?.title || sectionId;
-            // تفعيل الزر في الشريط الجانبي
-            document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
-            const btn = document.getElementById('btn-' + sectionId);
-            if (btn) btn.classList.add('active');
-            // استدعاء دالة العرض الخاصة بالموديول (يجب أن يعرفها الموديول على window)
-            const renderFuncName = 'render' + sectionId.charAt(0).toUpperCase() + sectionId.slice(1);
-            if (typeof window[renderFuncName] === 'function') {
-                // إفراغ المحتوى الديناميكي أولاً
-                dynamicSection.innerHTML = '<div class="text-center py-10">جاري التحميل...</div>';
-                // استدعاء دالة العرض (المسؤولة عن بناء الواجهة داخل dynamicSection)
-                window[renderFuncName](dynamicSection);
-            } else {
-                dynamicSection.innerHTML = `<p class="text-red-500">الموديول ${sectionId} لا يحتوي على دالة عرض.</p>`;
-            }
-            lucide.createIcons();
-        }
-
-        // بناء أزرار الشريط الجانبي حسب الصلاحيات
-        function buildSidebar() {
-            sidebarNav.innerHTML = '';
-            Object.keys(sectionsConfig).forEach(id => {
-                if (userPermissions.includes(id)) {
-                    const btn = document.createElement('button');
-                    btn.className = 'sidebar-item w-full flex items-center p-2.5';
-                    btn.id = 'btn-' + id;
-                    btn.innerHTML = `<i data-lucide="${getIcon(id)}" class="ml-3" size="18"></i> ${sectionsConfig[id].title}`;
-                    btn.onclick = () => showSection(id);
-                    sidebarNav.appendChild(btn);
-                }
-            });
-            lucide.createIcons();
-        }
-
-        function getIcon(sectionId) {
-            const icons = {
-                dashboard: 'layout-dashboard', customers: 'users', suppliers: 'truck',
-                inventory: 'package', invoices: 'file-text', payments: 'credit-card',
-                accounting: 'book-open', chartOfAccounts: 'git-branch', costs: 'pie-chart',
-                profit: 'trending-up', financialStatements: 'file-bar-chart',
-                monthlyClosing: 'calendar-check', backup: 'database'
-            };
-            return icons[sectionId] || 'circle';
-        }
-
-        // تسجيل الخروج
-        async function logout() {
-            await fetch(API_BASE + 'logout.php', { method: 'POST', credentials: 'include' });
-            appMain.classList.add('app-hidden');
-            loginScreen.classList.remove('app-hidden');
-            currentUser = null;
-            userPermissions = [];
-        }
-
-        // التحقق من الجلسة عند التحميل
-        async function checkSession() {
-            try {
-                const res = await fetch(API_BASE + 'check.php', { credentials: 'include' });
-                if (!res.ok) throw new Error('غير مصرح');
-                const data = await res.json();
-                currentUser = data.user;
-                userPermissions = data.permissions;
-                // عرض التطبيق
-                loginScreen.classList.add('app-hidden');
-                appMain.classList.remove('app-hidden');
-                sidebarUsername.textContent = currentUser.username;
-                buildSidebar();
-                // عرض لوحة التحكم افتراضياً
-                if (userPermissions.includes('dashboard')) {
-                    showSection('dashboard');
-                } else {
-                    // عرض أول قسم مصرح به
-                    const first = userPermissions[0];
-                    if (first) showSection(first);
-                }
-            } catch (e) {
-                // بقاء شاشة الدخول
-                loginScreen.classList.remove('app-hidden');
-                appMain.classList.add('app-hidden');
-            }
-        }
-
-        // معالج تسجيل الدخول
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             const username = document.getElementById('login-username').value.trim();
             const password = document.getElementById('login-password').value.trim();
             loginError.classList.add('hidden');
             try {
-                const res = await fetch(API_BASE + 'login.php', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ username, password }),
-                    credentials: 'include'
-                });
-                const data = await res.json();
-                if (!res.ok || data.error) {
-                    loginError.textContent = data.error || 'فشل تسجيل الدخول';
-                    loginError.classList.remove('hidden');
-                } else {
-                    // إعادة التحقق لتحميل الصلاحيات
-                    await checkSession();
-                }
+                await login(username, password);
+                // إظهار التطبيق
+                loginScreen.classList.add('app-hidden');
+                appMain.classList.remove('app-hidden');
+                // تحديث واجهة المستخدم
+                updateUIAfterLogin();
             } catch (err) {
-                loginError.textContent = 'تعذر الاتصال بالخادم';
+                loginError.textContent = err.message;
                 loginError.classList.remove('hidden');
             }
         });
 
         logoutBtn.addEventListener('click', logout);
 
-        // التاريخ الحالي
-        document.getElementById('current-date').innerText = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'full' }).format(new Date());
+        function updateUIAfterLogin() {
+            const session = getCurrentSession();
+            if (!session) return;
+            sidebarUsername.textContent = session.username;
+            buildSidebar();
+            // عرض أول قسم مسموح به
+            const permissions = getUserPermissions();
+            if (permissions.length > 0) {
+                showSection(permissions[0]);
+            }
+        }
 
-        // بدء التحقق من الجلسة عند تحميل الصفحة
-        checkSession();
+        // ====================== 3. بناء الشريط الجانبي حسب الصلاحيات ======================
+        const sectionsConfig = {
+            dashboard: { title: 'لوحة التحكم', icon: 'layout-dashboard' },
+            customers: { title: 'العملاء', icon: 'users' },
+            suppliers: { title: 'الموردين', icon: 'truck' },
+            inventory: { title: 'المخزون', icon: 'package' },
+            invoices: { title: 'الفواتير', icon: 'file-text' },
+            payments: { title: 'السداد والتحصيل', icon: 'credit-card' },
+            accounting: { title: 'القيود اليومية', icon: 'book-open' },
+            chartOfAccounts: { title: 'شجرة الحسابات', icon: 'git-branch' },
+            costs: { title: 'التكاليف والتقارير', icon: 'pie-chart' },
+            profit: { title: 'أرباح المنتجات', icon: 'trending-up' },
+            financialStatements: { title: 'القوائم المالية', icon: 'file-bar-chart' },
+            monthlyClosing: { title: 'الإقفال الشهري', icon: 'calendar-check' },
+            backup: { title: 'النسخ والبيانات', icon: 'database' }
+        };
+
+        function buildSidebar() {
+            const nav = document.getElementById('sidebar-nav');
+            nav.innerHTML = '';
+            const permissions = getUserPermissions();
+            Object.keys(sectionsConfig).forEach(id => {
+                if (permissions.includes(id)) {
+                    const config = sectionsConfig[id];
+                    const btn = document.createElement('button');
+                    btn.className = 'sidebar-item w-full flex items-center p-2.5';
+                    btn.id = 'btn-' + id;
+                    btn.innerHTML = `<i data-lucide="${config.icon}" class="ml-3" size="18"></i> ${config.title}`;
+                    btn.onclick = () => showSection(id);
+                    nav.appendChild(btn);
+                }
+            });
+            lucide.createIcons();
+        }
+
+        // ====================== 4. قاعدة بيانات التطبيق (localStorage الأصلية) ======================
+        let db = JSON.parse(localStorage.getItem('erp_db_v3')) || {
+            customers: [], suppliers: [], inventory: [], invoices: [], entries: [], costs: [], payments: [],
+            chartOfAccounts: [], monthlyClosings: []
+        };
+        ['payments','invoices','entries','costs','chartOfAccounts','monthlyClosings'].forEach(k => { if (!db[k]) db[k] = []; });
+        
+        if (db.chartOfAccounts.length === 0) {
+            db.chartOfAccounts = [
+                { id: 1, code: '1', name: 'الأصول', type: 'asset', parentId: null },
+                { id: 2, code: '1.1', name: 'النقدية', type: 'asset', parentId: 1 },
+                { id: 3, code: '1.2', name: 'العملاء', type: 'asset', parentId: 1 },
+                { id: 4, code: '1.3', name: 'المخزون', type: 'asset', parentId: 1 },
+                { id: 5, code: '2', name: 'الخصوم', type: 'liability', parentId: null },
+                { id: 6, code: '2.1', name: 'الموردين', type: 'liability', parentId: 5 },
+                { id: 7, code: '2.2', name: 'قروض', type: 'liability', parentId: 5 },
+                { id: 8, code: '3', name: 'حقوق الملكية', type: 'equity', parentId: null },
+                { id: 9, code: '3.1', name: 'رأس المال', type: 'equity', parentId: 8 },
+                { id: 10, code: '4', name: 'الإيرادات', type: 'revenue', parentId: null },
+                { id: 11, code: '4.1', name: 'المبيعات', type: 'revenue', parentId: 10 },
+                { id: 12, code: '5', name: 'المصروفات', type: 'expense', parentId: null },
+                { id: 13, code: '5.1', name: 'تكاليف البضاعة المباعة', type: 'expense', parentId: 12 },
+                { id: 14, code: '5.2', name: 'مصروفات تشغيلية', type: 'expense', parentId: 12 }
+            ];
+        }
+
+        function saveData() {
+            localStorage.setItem('erp_db_v3', JSON.stringify(db));
+            if (typeof renderDashboard === 'function') renderDashboard();
+        }
+
+        // ====================== 5. دوال النوافذ والتنقل (معدلة مع الصلاحيات) ======================
+        function closeModal() { 
+            document.getElementById('modal-overlay').classList.add('hidden'); 
+            document.getElementById('modal-body').innerHTML = ''; 
+        }
+        function closeStatement() { document.getElementById('statement-overlay').classList.add('hidden'); }
+        function closeInvoicePDF() { document.getElementById('invoice-pdf-overlay').classList.add('hidden'); }
+        
+        function printStatement() {
+            const content = document.getElementById('statement-body').innerHTML;
+            if (!content) return;
+            const win = window.open('', '_blank', 'width=900,height=700');
+            win.document.write(`<html dir="rtl"><head><title>كشف حساب</title><style>body{font-family:Cairo,sans-serif;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:right}</style></head><body>${content}</body></html>`);
+            win.document.close();
+            setTimeout(() => win.print(), 500);
+        }
+        
+        function printInvoicePDF() {
+            const content = document.getElementById('invoice-pdf-body').querySelector('.print-area');
+            if (!content) return;
+            const win = window.open('', '_blank', 'width=900,height=700');
+            win.document.write(`<html dir="rtl"><head><title>فاتورة</title><style>body{font-family:Cairo,sans-serif;padding:20px}table{border-collapse:collapse;width:100%}th,td{border:1px solid #ddd;padding:8px;text-align:right}@media print{body{padding:0}}</style></head><body>${content.outerHTML}</body></html>`);
+            win.document.close();
+            setTimeout(() => win.print(), 500);
+        }
+
+        function showSection(id) {
+            // التحقق من الصلاحية
+            const permissions = getUserPermissions();
+            if (!permissions.includes(id)) {
+                alert('غير مصرح لك بدخول هذا القسم');
+                return;
+            }
+
+            // إخفاء الكل وإظهار المطلوب
+            document.querySelectorAll('#main-content > section').forEach(s => s.classList.add('hidden'));
+            const target = document.getElementById(id);
+            if (target) target.classList.remove('hidden');
+
+            // تفعيل الزر في الشريط الجانبي
+            document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById('btn-' + id);
+            if (btn) btn.classList.add('active');
+
+            // تحديث العنوان
+            document.getElementById('section-title').innerText = sectionsConfig[id]?.title || id;
+
+            // استدعاء دالة العرض الخاصة بالموديول
+            const renderMap = {
+                dashboard: renderDashboard, customers: renderCustomers, suppliers: renderSuppliers,
+                inventory: renderInventory, invoices: renderInvoices, payments: renderPayments,
+                accounting: renderAccounting, chartOfAccounts: renderChartOfAccounts, costs: renderCosts,
+                profit: renderProfit, financialStatements: renderFinancialStatements,
+                monthlyClosing: renderMonthlyClosing, backup: renderBackup
+            };
+            if (renderMap[id] && typeof renderMap[id] === 'function') {
+                renderMap[id]();
+            }
+
+            lucide.createIcons();
+        }
+
+        // إغلاق النوافذ عند النقر خارجها
+        document.getElementById('modal-overlay')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
+        document.getElementById('statement-overlay')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeStatement(); });
+        document.getElementById('invoice-pdf-overlay')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeInvoicePDF(); });
+        
+        document.getElementById('current-date').innerText = new Intl.DateTimeFormat('ar-EG', { dateStyle: 'full' }).format(new Date());
+        lucide.createIcons();
+
+        // ====================== 6. تشغيل أولي ======================
+        window.addEventListener('DOMContentLoaded', async () => {
+            await initUsersDB();
+            const session = getCurrentSession();
+            if (session) {
+                // مستخدم مسجل دخول سابقاً
+                loginScreen.classList.add('app-hidden');
+                appMain.classList.remove('app-hidden');
+                updateUIAfterLogin();
+            } else {
+                // عرض شاشة الدخول
+                loginScreen.classList.remove('app-hidden');
+                appMain.classList.add('app-hidden');
+            }
+        });
+    </script>
+
+    <!-- موديولات التطبيق (تحميل عادي بدون fetch لتجنب مشاكل CORS) -->
+    <script src="js/modules/dashboard.js"></script>
+    <script src="js/modules/customers.js"></script>
+    <script src="js/modules/suppliers.js"></script>
+    <script src="js/modules/inventory.js"></script>
+    <script src="js/modules/invoices.js"></script>
+    <script src="js/modules/payments.js"></script>
+    <script src="js/modules/accounting.js"></script>
+    <script src="js/modules/chartOfAccounts.js"></script>
+    <script src="js/modules/costs.js"></script>
+    <script src="js/modules/profit.js"></script>
+    <script src="js/modules/financialStatements.js"></script>
+    <script src="js/modules/monthlyClosing.js"></script>
+    <script src="js/modules/backup.js"></script>
+
+    <script>
+        // بعد تحميل الموديولات، نعرض لوحة التحكم لو المستخدم مسجل
+        if (getCurrentSession()) {
+            const permissions = getUserPermissions();
+            if (permissions.includes('dashboard')) {
+                showSection('dashboard');
+            } else if (permissions.length > 0) {
+                showSection(permissions[0]);
+            }
+        }
+        lucide.createIcons();
     </script>
 </body>
 </html>
