@@ -163,6 +163,117 @@
             if (typeof renderDashboard === 'function') renderDashboard();
         }
 
+        // ========== لوحة التحكم المضمنة (إصلاح الشاشة البيضاء) ==========
+        window.renderDashboard = function() {
+            const section = document.getElementById('dashboard');
+            if (!section) return;
+            
+            const totalCustomers = (db.customers || []).length;
+            const totalSuppliers = (db.suppliers || []).length;
+            const totalProducts = (db.inventory || []).length;
+            const invoices = db.invoices || [];
+            const totalInvoices = invoices.length;
+            const totalSales = invoices.reduce((sum, inv) => sum + (Number(inv.total) || 0), 0);
+            const totalPayments = (db.payments || []).reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+            const lowStockItems = (db.inventory || []).filter(item => (Number(item.quantity) || 0) < 10).length;
+
+            // أحدث الفواتير (آخر 5)
+            const recentInvoices = [...invoices].sort((a, b) => new Date(b.date) - new Date(a.date)).slice(0, 5);
+
+            section.innerHTML = `
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+                    <div class="bg-white rounded-xl shadow p-4 flex items-center gap-4">
+                        <div class="p-3 bg-blue-100 rounded-full"><i data-lucide="users" class="text-blue-600" size="24"></i></div>
+                        <div><p class="text-sm text-gray-500">العملاء</p><p class="text-2xl font-bold">${totalCustomers}</p></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow p-4 flex items-center gap-4">
+                        <div class="p-3 bg-green-100 rounded-full"><i data-lucide="truck" class="text-green-600" size="24"></i></div>
+                        <div><p class="text-sm text-gray-500">الموردين</p><p class="text-2xl font-bold">${totalSuppliers}</p></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow p-4 flex items-center gap-4">
+                        <div class="p-3 bg-purple-100 rounded-full"><i data-lucide="package" class="text-purple-600" size="24"></i></div>
+                        <div><p class="text-sm text-gray-500">المنتجات</p><p class="text-2xl font-bold">${totalProducts}</p></div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow p-4 flex items-center gap-4">
+                        <div class="p-3 bg-orange-100 rounded-full"><i data-lucide="file-text" class="text-orange-600" size="24"></i></div>
+                        <div><p class="text-sm text-gray-500">الفواتير</p><p class="text-2xl font-bold">${totalInvoices}</p></div>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+                    <div class="bg-white rounded-xl shadow p-5">
+                        <h3 class="font-bold text-lg mb-4">ملخص المبيعات والتحصيلات</h3>
+                        <div class="flex justify-around text-center">
+                            <div><p class="text-sm text-gray-500">إجمالي المبيعات</p><p class="text-xl font-bold text-blue-600">${totalSales.toLocaleString()} ج.م</p></div>
+                            <div><p class="text-sm text-gray-500">التحصيلات</p><p class="text-xl font-bold text-green-600">${totalPayments.toLocaleString()} ج.م</p></div>
+                        </div>
+                    </div>
+                    <div class="bg-white rounded-xl shadow p-5">
+                        <h3 class="font-bold text-lg mb-4">حالة المخزون</h3>
+                        <div class="flex justify-around text-center">
+                            <div><p class="text-sm text-gray-500">منتجات منخفضة</p><p class="text-xl font-bold text-red-600">${lowStockItems}</p></div>
+                            <div><p class="text-sm text-gray-500">إجمالي المنتجات</p><p class="text-xl font-bold text-gray-800">${totalProducts}</p></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-xl shadow p-5 mb-6">
+                    <h3 class="font-bold text-lg mb-4">أحدث الفواتير</h3>
+                    ${recentInvoices.length === 0 ? '<p class="text-gray-500">لا توجد فواتير بعد</p>' : `
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-sm">
+                            <thead><tr class="bg-gray-50"><th class="p-2 text-right">رقم</th><th class="p-2 text-right">العميل</th><th class="p-2 text-right">التاريخ</th><th class="p-2 text-right">الإجمالي</th></tr></thead>
+                            <tbody>
+                                ${recentInvoices.map(inv => `
+                                    <tr class="border-t">
+                                        <td class="p-2">${inv.id || '-'}</td>
+                                        <td class="p-2">${inv.customerName || 'عميل ' + (inv.customerId || '-')}</td>
+                                        <td class="p-2">${inv.date || '-'}</td>
+                                        <td class="p-2 font-semibold">${Number(inv.total || 0).toLocaleString()} ج.م</td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>`}
+                </div>
+
+                <div class="bg-white rounded-xl shadow p-5">
+                    <h3 class="font-bold text-lg mb-4">الرسم البياني للمخزون (أعلى 5 منتجات)</h3>
+                    <div class="h-64">
+                        <canvas id="inventoryChart"></canvas>
+                    </div>
+                </div>
+            `;
+
+            // رسم بياني للمخزون
+            setTimeout(() => {
+                const canvas = document.getElementById('inventoryChart');
+                if (!canvas) return;
+                const ctx = canvas.getContext('2d');
+                if (window.inventoryChartInstance) window.inventoryChartInstance.destroy();
+                const topItems = [...(db.inventory || [])].sort((a, b) => (b.quantity || 0) - (a.quantity || 0)).slice(0, 5);
+                window.inventoryChartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: {
+                        labels: topItems.map(i => i.name || 'منتج'),
+                        datasets: [{
+                            label: 'الكمية',
+                            data: topItems.map(i => i.quantity || 0),
+                            backgroundColor: '#3b82f6'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { y: { beginAtZero: true } }
+                    }
+                });
+            }, 100);
+
+            lucide.createIcons();
+        };
+
         // ========== نظام المستخدمين والصلاحيات ==========
         async function initUsersDB() {
             if (!localStorage.getItem(USERS_STORE_KEY)) {
@@ -381,13 +492,6 @@
                 appMain.classList.add('app-hidden');
             }
         });
-
-        // تأمين احتياطي لدالة لوحة التحكم إذا كانت غير موجودة
-        if (typeof renderDashboard !== 'function') {
-            window.renderDashboard = function() {
-                document.getElementById('dashboard').innerHTML = '<p class="p-4 text-center text-gray-600">مرحباً بك في لوحة التحكم. يجري تحميل البيانات...</p>';
-            };
-        }
     </script>
 
     <!-- الموديولات (يجب أن تكون موجودة في المسار js/modules/) -->
