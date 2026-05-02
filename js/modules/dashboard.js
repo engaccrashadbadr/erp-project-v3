@@ -1,9 +1,8 @@
+// js/modules/dashboard.js
 window.renderDashboard = function() {
     if (!document.getElementById('dashboard')) return;
-    // التأكد من وجود قاعدة البيانات
     if (typeof db === 'undefined') return;
     
-    // استخدام قيم افتراضية في حال كانت المصفوفات غير موجودة
     const invoices = db.invoices || [];
     const customers = db.customers || [];
     const suppliers = db.suppliers || [];
