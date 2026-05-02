@@ -1,5 +1,5 @@
 // js/modules/settings.js
-// موديول الإعدادات وإدارة المستخدمين - مع بحث عن الدور وإصلاح زر الإضافة
+// موديول الإعدادات وإدارة المستخدمين - مع إصلاح زر الإضافة والنافذة المنبثقة
 
 const ALL_ROLES = [
     { code: 'admin', name: 'مدير النظام (كامل الصلاحيات)' },
@@ -14,6 +14,40 @@ const ALL_ROLES = [
     { code: 'it_admin', name: 'مدير تقنية المعلومات' },
     { code: 'data_entry', name: 'موظف إدخال بيانات' }
 ];
+
+// ========== إنشاء النافذة المنبثقة إذا لم تكن موجودة ==========
+function ensureModalExists() {
+    if (document.getElementById('modal-overlay')) return;
+    
+    const modalHTML = `
+        <div id="modal-overlay" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 hidden">
+            <div class="bg-white rounded-lg shadow-xl w-full max-w-md p-6">
+                <div class="flex justify-between items-center mb-4">
+                    <h3 id="modal-title" class="text-xl font-bold">إضافة مستخدم</h3>
+                    <button id="modal-close-btn" class="text-gray-500 hover:text-gray-700">&times;</button>
+                </div>
+                <div id="modal-body"></div>
+                <div class="flex justify-left gap-3 mt-6">
+                    <button id="modal-save-btn" class="btn-primary px-4 py-2 bg-blue-600 text-white rounded-lg">حفظ</button>
+                    <button id="modal-cancel-btn" class="px-4 py-2 bg-gray-300 rounded-lg">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    `;
+    document.body.insertAdjacentHTML('beforeend', modalHTML);
+    
+    // ربط أحداث الإغلاق
+    document.getElementById('modal-close-btn').onclick = closeModal;
+    document.getElementById('modal-cancel-btn').onclick = closeModal;
+    document.getElementById('modal-overlay').onclick = (e) => {
+        if (e.target === document.getElementById('modal-overlay')) closeModal();
+    };
+}
+
+function closeModal() {
+    const overlay = document.getElementById('modal-overlay');
+    if (overlay) overlay.classList.add('hidden');
+}
 
 window.renderSettings = function() {
     const section = document.getElementById('settings');
@@ -60,8 +94,11 @@ window.renderSettings = function() {
         </div>
     `;
 
-    // ربط الأحداث مباشرة بعد بناء HTML
-    document.getElementById('add-user-btn').onclick = openUserModal;
+    // التأكد من وجود النافذة المنبثقة
+    ensureModalExists();
+    
+    // ربط الأحداث
+    document.getElementById('add-user-btn').onclick = () => openUserModal(null);
     document.getElementById('user-search-input').oninput = function(e) {
         loadUsersTable(e.target.value.trim());
     };
@@ -92,28 +129,50 @@ function loadUsersTable(filterText = '') {
         const roleDisplay = roleInfo ? roleInfo.name : user.role;
         return `
         <tr class="border-t">
-            <td class="p-3 border">${user.username}</td>
-            <td class="p-3 border">${roleDisplay}</td>
+            <td class="p-3 border">${escapeHtml(user.username)}</td>
+            <td class="p-3 border">${escapeHtml(roleDisplay)}</td>
             <td class="p-3 border space-x-2 space-x-reverse">
                 <button class="text-blue-600 hover:underline" onclick="editUser(${user.id})">تعديل</button>
                 <button class="text-yellow-600 hover:underline" onclick="changePassword(${user.id})">كلمة المرور</button>
                 <button class="text-red-600 hover:underline" onclick="deleteUser(${user.id})">حذف</button>
             </td>
-        </tr>`;
+        <tr>`;
     }).join('');
 }
 
-// ========== فتح نافذة إضافة / تعديل مستخدم ==========
-function openUserModal(user = null) {
-    const isEdit = !!user;
-    document.getElementById('modal-title').innerText = isEdit ? 'تعديل مستخدم' : 'إضافة مستخدم جديد';
-    const selectedRole = user ? user.role : 'admin';
+// دالة مساعدة لمنع هجمات XSS
+function escapeHtml(str) {
+    return str.replace(/[&<>]/g, function(m) {
+        if (m === '&') return '&amp;';
+        if (m === '<') return '&lt;';
+        if (m === '>') return '&gt;';
+        return m;
+    });
+}
 
-    document.getElementById('modal-body').innerHTML = `
+// ========== فتح نافذة إضافة / تعديل مستخدم ==========
+function openUserModal(user) {
+    const isEdit = !!user;  // true إذا كان user موجوداً (تعديل)، false إذا كان null أو undefined (إضافة)
+    ensureModalExists();
+    
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    if (!modalTitle || !modalBody) {
+        console.error('عناصر النافذة غير موجودة');
+        return;
+    }
+    
+    // تعيين العنوان بشكل صريح
+    modalTitle.innerText = isEdit ? 'تعديل مستخدم' : 'إضافة مستخدم جديد';
+    
+    // القيمة المبدئية للدور: في حالة التعديل نأخذ دور المستخدم، وإلا admin
+    const selectedRole = user ? user.role : 'admin';
+    
+    modalBody.innerHTML = `
         <div class="space-y-4">
             <div>
                 <label class="block text-sm font-medium mb-1">اسم المستخدم</label>
-                <input id="input-username" class="w-full border rounded-lg p-2.5" value="${user ? user.username : ''}">
+                <input id="input-username" class="w-full border rounded-lg p-2.5" value="${user ? escapeHtml(user.username) : ''}">
             </div>
             ${!isEdit ? `
             <div>
@@ -127,8 +186,8 @@ function openUserModal(user = null) {
             </div>
         </div>
     `;
-
-    // ملء قائمة الأدوار مع إمكانية التصفية
+    
+    // دالة ملء قائمة الأدوار مع فلترة
     function populateRoleSelect(filter = '') {
         const select = document.getElementById('input-role');
         if (!select) return;
@@ -136,58 +195,93 @@ function openUserModal(user = null) {
             r.name.includes(filter) || r.code.includes(filter)
         );
         select.innerHTML = filteredRoles.map(r => 
-            `<option value="${r.code}" ${selectedRole === r.code ? 'selected' : ''}>${r.name}</option>`
+            `<option value="${r.code}" ${selectedRole === r.code ? 'selected' : ''}>${escapeHtml(r.name)}</option>`
         ).join('');
         if (filteredRoles.length === 0) {
             select.innerHTML = '<option disabled>لا توجد أدوار مطابقة</option>';
         }
     }
     populateRoleSelect();
-    document.getElementById('role-search').oninput = function(e) {
-        populateRoleSelect(e.target.value.trim());
-    };
-
+    
+    const roleSearch = document.getElementById('role-search');
+    if (roleSearch) {
+        roleSearch.oninput = function(e) {
+            populateRoleSelect(e.target.value.trim());
+        };
+    }
+    
+    // إظهار النافذة
     document.getElementById('modal-overlay').classList.remove('hidden');
-
-    // زر الحفظ
-    document.getElementById('modal-save-btn').onclick = async function() {
+    
+    // ربط زر الحفظ (إزالة أي مستمع سابق لمنع التكرار)
+    const saveBtn = document.getElementById('modal-save-btn');
+    const newSaveBtn = saveBtn.cloneNode(true);
+    saveBtn.parentNode.replaceChild(newSaveBtn, saveBtn);
+    
+    newSaveBtn.onclick = async function() {
         const username = document.getElementById('input-username').value.trim();
         const roleSelect = document.getElementById('input-role');
-        const role = roleSelect.value;
-
-        if (!username) { alert('اسم المستخدم مطلوب'); return; }
-        if (!role) { alert('يرجى اختيار دور'); return; }
-
+        const role = roleSelect ? roleSelect.value : null;
+        
+        if (!username) {
+            alert('اسم المستخدم مطلوب');
+            return;
+        }
+        if (!role) {
+            alert('يرجى اختيار دور');
+            return;
+        }
+        
         const users = ERP.getUsersDB();
         const session = getCurrentSession();
         const currentUserId = session ? session.userId : null;
-
+        
         try {
             if (isEdit) {
+                // تعديل مستخدم موجود
                 const index = users.findIndex(u => u.id === user.id);
-                if (index === -1) return alert('المستخدم غير موجود');
+                if (index === -1) {
+                    alert('المستخدم غير موجود');
+                    return;
+                }
+                // التحقق من عدم تكرار اسم المستخدم (باستثناء نفس المستخدم)
                 const duplicate = users.find(u => u.username === username && u.id !== user.id);
-                if (duplicate) return alert('اسم المستخدم موجود مسبقاً');
+                if (duplicate) {
+                    alert('اسم المستخدم موجود مسبقاً');
+                    return;
+                }
                 users[index].username = username;
                 users[index].role = role;
+                ERP.saveUsersDB(users);
+                alert('تم تعديل المستخدم بنجاح');
             } else {
+                // إضافة مستخدم جديد
                 const password = document.getElementById('input-password').value.trim();
-                if (!password) { alert('كلمة المرور مطلوبة'); return; }
+                if (!password) {
+                    alert('كلمة المرور مطلوبة');
+                    return;
+                }
                 const exists = users.some(u => u.username === username);
-                if (exists) { alert('اسم المستخدم موجود مسبقاً'); return; }
+                if (exists) {
+                    alert('اسم المستخدم موجود مسبقاً');
+                    return;
+                }
                 const newId = users.length ? Math.max(...users.map(u => u.id)) + 1 : 1;
                 const hashedPass = await ERP.hashPassword(password);
                 users.push({ id: newId, username, password: hashedPass, role });
+                ERP.saveUsersDB(users);
+                alert('تم إضافة المستخدم بنجاح');
             }
-
-            ERP.saveUsersDB(users);
+            
             closeModal();
-            loadUsersTable();
-
+            loadUsersTable(); // تحديث الجدول
+            
+            // إذا تم تعديل المستخدم الحالي، تحديث القائمة الجانبية
             if (isEdit && user.id === currentUserId) {
-                buildSidebar(); // تحديث القائمة الجانبية إذا تغير دور المستخدم الحالي
+                buildSidebar();
             }
         } catch (err) {
+            console.error(err);
             alert('فشل في حفظ المستخدم: ' + err.message);
         }
     };
@@ -197,14 +291,20 @@ function openUserModal(user = null) {
 function editUser(userId) {
     const users = ERP.getUsersDB();
     const user = users.find(u => u.id === userId);
-    if (!user) return alert('المستخدم غير موجود');
+    if (!user) {
+        alert('المستخدم غير موجود');
+        return;
+    }
     openUserModal(user);
 }
 
 function changePassword(userId) {
     const users = ERP.getUsersDB();
     const user = users.find(u => u.id === userId);
-    if (!user) return alert('المستخدم غير موجود');
+    if (!user) {
+        alert('المستخدم غير موجود');
+        return;
+    }
     const newPass = prompt(`أدخل كلمة المرور الجديدة للمستخدم: ${user.username}`);
     if (!newPass) return;
     ERP.hashPassword(newPass).then(hashed => {
