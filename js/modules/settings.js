@@ -97,8 +97,8 @@ window.renderSettings = function() {
     // التأكد من وجود النافذة المنبثقة
     ensureModalExists();
     
-    // ربط الأحداث
-    document.getElementById('add-user-btn').onclick = () => openUserModal(null);
+    // ربط الأحداث - زر الإضافة يمرر 'add' بوضوح
+    document.getElementById('add-user-btn').onclick = () => openUserModal('add', null);
     document.getElementById('user-search-input').oninput = function(e) {
         loadUsersTable(e.target.value.trim());
     };
@@ -150,9 +150,11 @@ function escapeHtml(str) {
     });
 }
 
-// ========== فتح نافذة إضافة / تعديل مستخدم ==========
-function openUserModal(user) {
-    const isEdit = !!user;  // true إذا كان user موجوداً (تعديل)، false إذا كان null أو undefined (إضافة)
+// ========== فتح نافذة إضافة / تعديل مستخدم (باستخدام وضع صريح) ==========
+function openUserModal(mode, userData) {
+    const isEdit = mode === 'edit';
+    const user = userData; // يكون null في حالة الإضافة
+
     ensureModalExists();
     
     const modalTitle = document.getElementById('modal-title');
@@ -162,7 +164,7 @@ function openUserModal(user) {
         return;
     }
     
-    // تعيين العنوان بشكل صريح
+    // تعيين العنوان بشكل واضح حسب الوضع
     modalTitle.innerText = isEdit ? 'تعديل مستخدم' : 'إضافة مستخدم جديد';
     
     // القيمة المبدئية للدور: في حالة التعديل نأخذ دور المستخدم، وإلا admin
@@ -295,7 +297,7 @@ function editUser(userId) {
         alert('المستخدم غير موجود');
         return;
     }
-    openUserModal(user);
+    openUserModal('edit', user); // تمرير وضع التعديل مع بيانات المستخدم
 }
 
 function changePassword(userId) {
