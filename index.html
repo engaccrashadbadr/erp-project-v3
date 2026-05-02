@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ERP System - نظام تخطيط موارد المؤسسات</title>
     
+    <!-- المكتبات الخارجية -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
@@ -39,7 +40,7 @@
         </div>
     </div>
 
-    <!-- التطبيق الرئيسي -->
+    <!-- التطبيق الرئيسي (مخفي حتى تسجيل الدخول) -->
     <div id="app-main" class="flex h-screen overflow-hidden app-hidden">
         <!-- الشريط الجانبي -->
         <aside class="sidebar w-64 bg-[#0f172a] text-white flex flex-col flex-shrink-0">
@@ -48,7 +49,9 @@
                 <p class="text-xs text-slate-400 mt-1">نظام تخطيط موارد المؤسسات</p>
                 <p class="text-[10px] text-slate-500 mt-0.5">الإصدار 3.5.0 © 2026</p>
             </div>
-            <nav id="sidebar-nav" class="flex-1 mt-4 px-3 space-y-1 overflow-y-auto"></nav>
+            <nav id="sidebar-nav" class="flex-1 mt-4 px-3 space-y-1 overflow-y-auto">
+                <!-- الأزرار تُبنى حسب الصلاحيات -->
+            </nav>
             <div class="p-3 border-t border-slate-700/50 flex justify-between items-center">
                 <span id="sidebar-username" class="text-sm"></span>
                 <button id="logout-btn" class="text-red-400 hover:text-red-300 text-sm">خروج</button>
@@ -109,10 +112,11 @@
     </div>
 
     <script>
-        // ====================== 1. الإعدادات العامة ======================
+        // ========== الإعدادات الأساسية ==========
         const USERS_STORE_KEY = 'erp_users_db';
         const AUTH_KEY = 'erp_current_session';
 
+        // تشفير كلمة المرور
         async function hashPassword(password) {
             const msgUint8 = new TextEncoder().encode(password);
             const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
@@ -128,7 +132,7 @@
             USERS_STORE_KEY
         };
 
-        // قاعدة بيانات التطبيق الأصلية
+        // قاعدة بيانات التطبيق المخزنة محلياً (كما كانت)
         let db = JSON.parse(localStorage.getItem('erp_db_v3')) || {
             customers: [], suppliers: [], inventory: [], invoices: [], entries: [], costs: [], payments: [],
             chartOfAccounts: [], monthlyClosings: []
@@ -159,7 +163,7 @@
             if (typeof renderDashboard === 'function') renderDashboard();
         }
 
-        // ====================== 2. نظام المستخدمين ======================
+        // ========== نظام المستخدمين والصلاحيات ==========
         async function initUsersDB() {
             if (!localStorage.getItem(USERS_STORE_KEY)) {
                 const defaultUsers = [
@@ -177,7 +181,6 @@
 
         function login(username, password) {
             const users = ERP.getUsersDB();
-            // البحث عن المستخدم ومقارنة كلمة المرور المشفرة
             return hashPassword(password).then(hashedInput => {
                 const user = users.find(u => u.username === username && u.password === hashedInput);
                 if (!user) throw new Error('اسم المستخدم أو كلمة المرور غير صحيحة');
@@ -206,7 +209,7 @@
             return ROLES_PERMISSIONS[session.role] || [];
         }
 
-        // ====================== 3. الواجهة ======================
+        // ========== واجهة المستخدم والتنقل ==========
         const loginScreen = document.getElementById('login-screen');
         const appMain = document.getElementById('app-main');
         const loginForm = document.getElementById('login-form');
@@ -239,7 +242,7 @@
             buildSidebar();
             const permissions = getUserPermissions();
             if (permissions.length > 0) {
-                showSection(permissions[0]);
+                showSection(permissions[0]);  // عرض أول قسم مسموح به
             }
         }
 
@@ -284,31 +287,54 @@
                 alert('غير مصرح لك بدخول هذا القسم');
                 return;
             }
+
+            // إخفاء جميع الأقسام
             document.querySelectorAll('#main-content > section').forEach(s => s.classList.add('hidden'));
             const target = document.getElementById(id);
             if (target) target.classList.remove('hidden');
+
+            // تفعيل الزر في الشريط
             document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
             const btn = document.getElementById('btn-' + id);
             if (btn) btn.classList.add('active');
+
             document.getElementById('section-title').innerText = sectionsConfig[id]?.title || id;
 
-            const renderMap = {
-                dashboard: renderDashboard, customers: renderCustomers, suppliers: renderSuppliers,
-                inventory: renderInventory, invoices: renderInvoices, payments: renderPayments,
-                accounting: renderAccounting, chartOfAccounts: renderChartOfAccounts, costs: renderCosts,
-                profit: renderProfit, financialStatements: renderFinancialStatements,
-                monthlyClosing: renderMonthlyClosing, backup: renderBackup, settings: renderSettings
+            // خريطة أسماء دوال العرض
+            const renderFuncMap = {
+                dashboard: 'renderDashboard',
+                customers: 'renderCustomers',
+                suppliers: 'renderSuppliers',
+                inventory: 'renderInventory',
+                invoices: 'renderInvoices',
+                payments: 'renderPayments',
+                accounting: 'renderAccounting',
+                chartOfAccounts: 'renderChartOfAccounts',
+                costs: 'renderCosts',
+                profit: 'renderProfit',
+                financialStatements: 'renderFinancialStatements',
+                monthlyClosing: 'renderMonthlyClosing',
+                backup: 'renderBackup',
+                settings: 'renderSettings'
             };
-            if (renderMap[id] && typeof renderMap[id] === 'function') {
-                renderMap[id]();
+
+            const funcName = renderFuncMap[id];
+            if (funcName && typeof window[funcName] === 'function') {
+                try {
+                    window[funcName]();
+                } catch (e) {
+                    console.error(`خطأ في تنفيذ ${funcName}:`, e);
+                    if (target) target.innerHTML = '<p class="text-red-500 p-4">حدث خطأ أثناء تحميل القسم. راجع وحدة التحكم.</p>';
+                }
             } else {
-                console.warn(`دالة العرض ${id} غير موجودة`);
+                console.warn(`دالة العرض ${funcName} غير معرفة.`);
                 if (target) target.innerHTML = '<p class="text-center py-10 text-gray-500">الموديول غير متوفر حالياً</p>';
             }
+
             lucide.createIcons();
         }
 
-        // النوافذ
+        // دوال النوافذ المنبثقة
         function closeModal() { 
             document.getElementById('modal-overlay').classList.add('hidden'); 
             document.getElementById('modal-body').innerHTML = ''; 
@@ -334,6 +360,7 @@
             setTimeout(() => win.print(), 500);
         }
 
+        // إغلاق النوافذ عند النقر خارجها
         document.getElementById('modal-overlay')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeModal(); });
         document.getElementById('statement-overlay')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeStatement(); });
         document.getElementById('invoice-pdf-overlay')?.addEventListener('click', (e) => { if (e.target === e.currentTarget) closeInvoicePDF(); });
@@ -354,9 +381,16 @@
                 appMain.classList.add('app-hidden');
             }
         });
+
+        // تأمين احتياطي لدالة لوحة التحكم إذا كانت غير موجودة
+        if (typeof renderDashboard !== 'function') {
+            window.renderDashboard = function() {
+                document.getElementById('dashboard').innerHTML = '<p class="p-4 text-center text-gray-600">مرحباً بك في لوحة التحكم. يجري تحميل البيانات...</p>';
+            };
+        }
     </script>
 
-    <!-- الموديولات الرئيسية -->
+    <!-- الموديولات (يجب أن تكون موجودة في المسار js/modules/) -->
     <script src="js/modules/dashboard.js"></script>
     <script src="js/modules/customers.js"></script>
     <script src="js/modules/suppliers.js"></script>
@@ -370,11 +404,10 @@
     <script src="js/modules/financialStatements.js"></script>
     <script src="js/modules/monthlyClosing.js"></script>
     <script src="js/modules/backup.js"></script>
-    <!-- موديول الإعدادات -->
     <script src="js/modules/settings.js"></script>
 
     <script>
-        // بعد التحميل، عرض القسم الافتراضي إذا كان المستخدم مسجلاً
+        // عرض القسم المناسب بعد تحميل الصفحة إذا كان المستخدم مسجلاً
         if (getCurrentSession()) {
             const permissions = getUserPermissions();
             if (permissions.includes('dashboard')) {
