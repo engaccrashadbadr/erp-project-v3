@@ -1,13 +1,23 @@
 window.renderDashboard = function() {
     if (!document.getElementById('dashboard')) return;
-    const totalSales = db.invoices.filter(inv => inv.type === 'sale').reduce((s,inv) => s + (inv.total||0), 0);
-    const totalPurchases = db.invoices.filter(inv => inv.type === 'purchase').reduce((s,inv) => s + (inv.total||0), 0);
-    const totalProfit = db.invoices.filter(inv => inv.type === 'sale').reduce((s,inv) => s + (inv.totalProfit||0), 0);
-    const invValue = db.inventory.reduce((s,i) => s + ((i.costPrice||0)*(i.quantity||0)), 0);
-    const customerBalance = db.customers.reduce((s,c) => s + (c.balance||0), 0);
-    const supplierBalance = db.suppliers.reduce((s,sup) => s + (sup.balance||0), 0);
-    const totalPaymentsIn = db.payments.filter(p => p.paymentType === 'customer').reduce((s,p) => s + (p.amount||0), 0);
-    const totalPaymentsOut = db.payments.filter(p => p.paymentType === 'supplier').reduce((s,p) => s + (p.amount||0), 0);
+    // التأكد من وجود قاعدة البيانات
+    if (typeof db === 'undefined') return;
+    
+    // استخدام قيم افتراضية في حال كانت المصفوفات غير موجودة
+    const invoices = db.invoices || [];
+    const customers = db.customers || [];
+    const suppliers = db.suppliers || [];
+    const inventory = db.inventory || [];
+    const payments = db.payments || [];
+
+    const totalSales = invoices.filter(inv => inv.type === 'sale').reduce((s,inv) => s + (inv.total||0), 0);
+    const totalPurchases = invoices.filter(inv => inv.type === 'purchase').reduce((s,inv) => s + (inv.total||0), 0);
+    const totalProfit = invoices.filter(inv => inv.type === 'sale').reduce((s,inv) => s + (inv.totalProfit||0), 0);
+    const invValue = inventory.reduce((s,i) => s + ((i.costPrice||0)*(i.quantity||0)), 0);
+    const customerBalance = customers.reduce((s,c) => s + (c.balance||0), 0);
+    const supplierBalance = suppliers.reduce((s,sup) => s + (sup.balance||0), 0);
+    const totalPaymentsIn = payments.filter(p => p.paymentType === 'customer').reduce((s,p) => s + (p.amount||0), 0);
+    const totalPaymentsOut = payments.filter(p => p.paymentType === 'supplier').reduce((s,p) => s + (p.amount||0), 0);
     
     document.getElementById('dashboard').innerHTML = `
         <div class="space-y-5">
@@ -23,20 +33,6 @@ window.renderDashboard = function() {
                 <div class="stat-card border-r-4 border-teal-500"><p class="text-xs">تحصيلات</p><h3 class="text-lg font-bold mt-1 text-green-600">${totalPaymentsIn.toFixed(2)}</h3></div>
                 <div class="stat-card border-r-4 border-rose-500"><p class="text-xs">مدفوعات</p><h3 class="text-lg font-bold mt-1 text-red-600">${totalPaymentsOut.toFixed(2)}</h3></div>
             </div>
-        </div>
-    `;
-    lucide.createIcons();
-};
-// js/modules/dashboard.js
-window.renderDashboard = function() {
-    const data = ERP.db; // الوصول الصحيح للبيانات
-    const totalSales = data.invoices.filter(inv => inv.type === 'sale').reduce((s,inv) => s + (inv.total||0), 0);
-    // ... باقي كود العرض ...
-    
-    document.getElementById('dashboard').innerHTML = `
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <!-- كود الكروت الخاصة بك هنا -->
-            <div class="stat-card">إجمالي المبيعات: ${totalSales.toFixed(2)}</div>
         </div>
     `;
     lucide.createIcons();
