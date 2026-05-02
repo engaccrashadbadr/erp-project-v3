@@ -285,10 +285,19 @@
             }
         }
 
-        const ROLES_PERMISSIONS = {
-            admin: ["dashboard", "customers", "suppliers", "inventory", "invoices", "payments", "accounting", "chartOfAccounts", "costs", "profit", "financialStatements", "monthlyClosing", "backup", "settings"],
-            sales: ["dashboard", "customers", "invoices"]
-        };
+       const ROLES_PERMISSIONS = {
+    admin: ["dashboard", "customers", "suppliers", "inventory", "invoices", "payments", "accounting", "chartOfAccounts", "costs", "profit", "financialStatements", "monthlyClosing", "backup", "settings"],
+    general_manager: ["dashboard", "customers", "suppliers", "inventory", "invoices", "payments", "accounting", "chartOfAccounts", "costs", "profit", "financialStatements", "monthlyClosing", "backup", "settings"],
+    financial_manager: ["dashboard", "invoices", "payments", "accounting", "chartOfAccounts", "costs", "profit", "financialStatements", "monthlyClosing", "backup"],
+    accountant: ["dashboard", "invoices", "payments", "accounting", "chartOfAccounts", "monthlyClosing"],
+    sales_manager: ["dashboard", "customers", "inventory", "invoices", "payments", "profit", "costs"],
+    sales: ["dashboard", "customers", "invoices"],
+    inventory_manager: ["dashboard", "inventory", "costs", "profit", "suppliers"],
+    purchase_manager: ["dashboard", "suppliers", "inventory", "invoices", "payments", "costs"],
+    hr_manager: ["dashboard", "settings"],
+    it_admin: ["dashboard", "backup", "settings"],
+    data_entry: ["dashboard", "customers", "suppliers", "inventory", "invoices", "payments"]
+};
 
         function login(username, password) {
             const users = ERP.getUsersDB();
